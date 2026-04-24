@@ -11,8 +11,6 @@ import {
   BadRequestException,
   UseFilters,
   ParseIntPipe,
-  UsePipes,
-  ValidationPipe,
   UseGuards,
   UseInterceptors,
   Query,
@@ -35,7 +33,6 @@ export class CatsController {
 
   @Post()
   @Roles(['admin'])
-  @UsePipes(ValidationPipe)
   create(@Body() createCatDto: CreateCatDto) {
     return this.catsService.create(createCatDto);
   }
