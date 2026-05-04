@@ -18,15 +18,14 @@ import {
 import { CatsService } from './cats.service';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
-import { HttpExceptionFilter } from 'src/http-exception/http-exception.filter';
-import { AuthGuard } from 'src/auth/auth.guard';
-import { RolesGuard } from 'src/roles/roles.guard';
-import { Roles } from 'src/roles/roles.decorator';
-import { LoggingInterceptor } from 'src/logger/logging.interceptor';
-import { TransformInterceptor } from 'src/logger/transform.interceptor';
+import { HttpExceptionFilter } from '@src/http-exception/http-exception.filter';
+import { RolesGuard } from '@src/roles/roles.guard';
+import { Roles } from '@src/roles/roles.decorator';
+import { LoggingInterceptor } from '@src/logger/logging.interceptor';
+import { TransformInterceptor } from '@src/logger/transform.interceptor';
 
 @Controller('cats')
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @UseInterceptors(LoggingInterceptor, TransformInterceptor)
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
@@ -39,20 +38,7 @@ export class CatsController {
 
   @Get()
   findAll() {
-    try {
-      return this.catsService.findAll();
-    } catch (error) {
-      throw new HttpException(
-        {
-          status: HttpStatus.FORBIDDEN,
-          error: 'This is a custom message',
-        },
-        HttpStatus.FORBIDDEN,
-        {
-          cause: error,
-        },
-      );
-    }
+    return this.catsService.findAll();
   }
 
   @Get('abcd/*path')
@@ -69,18 +55,18 @@ export class CatsController {
     });
   }
 
-  @Get('/tx1')
+  @Get('/transaction1')
   count(@Query('name') name: string) {
     return this.catsService.transaction(name);
   }
 
-  @Get('/tx2')
+  @Get('/transaction2')
   count2() {
     return this.catsService.advTransaction();
   }
   @Get('/txpromise')
-  test() {
-    return this.catsService.testTime();
+  timeTest() {
+    return this.catsService.timeTest();
   }
 
   @Get(':id')

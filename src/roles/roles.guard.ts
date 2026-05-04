@@ -33,7 +33,6 @@ export class RolesGuard implements CanActivate {
     const hasRole = roles.some((role) => userRoles?.includes(role));
 
     if (!hasRole) {
-      // Custom message for missing roles
       throw new ForbiddenException(
         `You do not have the required roles: ${roles.join(', ')}`,
       );

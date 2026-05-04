@@ -1,7 +1,7 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 
 export class UserEntity {
-  id!: number;
+  id!: string;
   firstName?: string;
   lastName?: string;
 
@@ -13,6 +13,7 @@ export class UserEntity {
 
   @Expose()
   get fullName(): string {
+    if (!this.firstName || !this.lastName) return '';
     return `${this.firstName} ${this.lastName}`;
   }
 

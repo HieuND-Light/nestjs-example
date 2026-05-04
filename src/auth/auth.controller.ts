@@ -6,31 +6,32 @@ import {
   HttpStatus,
   UseGuards,
   Get,
-  Request,
   ValidationPipe,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthService } from './auth.service';
-import { PrismaService } from 'src/prisma.service';
-import { User } from 'src/users/user.decorator';
-import { UserEntity } from 'src/users/entities/user.entity';
+import { User } from '@src/users/user.decorator';
+import { UserEntity } from '@src/users/entities/user.entity';
+import { JwtRefreshGuard } from './jwt-refresh.guard';
+import { SignInDto } from './dto/auth.dto';
+import { generateCsrfToken } from '@src/config/csrf.config';
+import type { Request, Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private prisma: PrismaService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @HttpCode(HttpStatus.OK)
-  @Post('login')
-  signIn(@Body() signInDto: Record<string, any>) {
-    return this.authService.signIn(signInDto.username, signInDto.password);
+  @Get('csrf-token')
+  getCsrfToken(@Req() req: Request, @Res() res: Response) {
+    const csrfToken = generateCsrfToken(req, res);
+    return res.json({ csrfToken });
   }
 
-  @Post('login2')
+  @Post('login')
   @HttpCode(HttpStatus.OK)
-  async signInUseDB(@Body() dto: any) {
+  async signInUseDB(@Body() dto: SignInDto) {
     const user = await this.authService.validateUser(dto);
     const tokens = await this.authService.getTokens(user.id, user.email);
     await this.authService.updateRefreshToken(user.id, tokens.refresh_token);
@@ -39,21 +40,24 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtRefreshGuard)
   async refresh(
     @Body('refresh_token') refresh_token: string,
-    @Body('user_id') id: number,
+    @Body('user_id') id: string,
   ) {
     return this.authService.refreshTokens(id, refresh_token);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async signOut(@Body('user_id') id: number) {
-    return this.authService.signOut(id);
+  @UseGuards(JwtAuthGuard)
+  async signOut(@User('sub') userId: string) {
+    return this.authService.signOut(userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('profile')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
   getProfile(
     @User(new ValidationPipe({ validateCustomDecorators: true }))
     user: UserEntity,

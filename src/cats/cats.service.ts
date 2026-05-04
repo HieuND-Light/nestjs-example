@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '@src/prisma/prisma.service';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
-import { Cat, Prisma } from 'src/generated/prisma/client';
+import { Cat, Prisma } from '@src/generated/prisma/client';
 
 @Injectable()
 export class CatsService {
@@ -14,7 +14,6 @@ export class CatsService {
   }
 
   async findAll() {
-    // return `This action returns all cats`;
     return await this.prisma.cat.findMany();
   }
 
@@ -27,8 +26,7 @@ export class CatsService {
     return cat;
   }
 
-  async update(id: number, data: Prisma.CatUpdateInput): Promise<Cat> {
-    // return `This action updates a #${id} cat`;
+  async update(id: number, data: UpdateCatDto): Promise<Cat> {
     try {
       return await this.prisma.cat.update({
         where: { id },
@@ -41,7 +39,6 @@ export class CatsService {
   }
 
   async remove(id: number): Promise<Cat> {
-    // return `This action removes a #${id} cat`;
     try {
       return await this.prisma.cat.delete({
         where: { id },
@@ -81,7 +78,7 @@ export class CatsService {
     );
   }
 
-  async testTime() {
+  async timeTest() {
     await this.prisma.$transaction(async (tx) => {
       await Promise.all([
         tx.cat.findMany(),
