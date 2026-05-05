@@ -9,6 +9,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { RedisModule } from './redis/redis.module';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
@@ -21,7 +23,31 @@ import { ThrottlerGuard } from '@nestjs/throttler';
         limit: 10,
       },
     ]),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  singleLine: true,
+                  translateTime: 'SYS:standard',
+                  messageFormat: '[{context}] - {msg}',
+                  ignore: 'pid,hostname,context',
+                  customColors: 'err:red,info:blue,warn:yellow',
+                },
+              }
+            : undefined,
+        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
+        redact: {
+          paths: ['req.headers', 'res.headers'],
+          remove: true,
+        },
+      },
+    }),
     PrismaModule,
+    RedisModule,
     CatsModule,
     AuthModule,
     UsersModule,

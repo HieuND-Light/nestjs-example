@@ -1,15 +1,17 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '@src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@src/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
-    private prisma: PrismaService,
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getTokens(userId: string, email: string) {
@@ -17,15 +19,15 @@ export class AuthService {
       this.jwtService.signAsync(
         { sub: userId, email },
         {
-          secret: process.env.JWT_SECRET_KEY,
-          expiresIn: process.env.JWT_EXPIRATION as any,
+          secret: this.configService.get('JWT_SECRET_KEY'),
+          expiresIn: this.configService.get('JWT_EXPIRATION'),
         },
       ),
       this.jwtService.signAsync(
         { sub: userId, email },
         {
-          secret: process.env.JWT_REFRESH_SECRET,
-          expiresIn: process.env.JWT_REFRESH_EXPIRATION as any,
+          secret: this.configService.get('JWT_REFRESH_SECRET'),
+          expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION'),
         },
       ),
     ]);

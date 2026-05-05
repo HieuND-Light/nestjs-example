@@ -4,14 +4,22 @@ import { PrismaService } from '@src/prisma/prisma.service';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserEntity } from './entities/user.entity';
+import { getRedisConnectionToken } from '@nestjs-modules/ioredis';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
 }));
 
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+};
+
 describe('UsersService', () => {
   let service: UsersService;
   let prisma: PrismaService;
+  let redis: any;
 
   const mockUserDto = {
     email: 'test@example.com',
@@ -41,11 +49,20 @@ describe('UsersService', () => {
             },
           },
         },
+        {
+          provide: getRedisConnectionToken('default'),
+          useValue: mockRedis,
+        },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     prisma = module.get<PrismaService>(PrismaService);
+    redis = module.get<any>(getRedisConnectionToken('default'));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('create()', () => {

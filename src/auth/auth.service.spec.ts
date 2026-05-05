@@ -5,6 +5,7 @@ import { UsersService } from '@src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
@@ -15,6 +16,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: PrismaService;
   let jwt: JwtService;
+  let config: ConfigService;
 
   const mockUser = {
     id: 1,
@@ -29,7 +31,7 @@ describe('AuthService', () => {
         AuthService,
         {
           provide: UsersService,
-          useValue: {}, // Not directly used in the snippets provided
+          useValue: {},
         },
         {
           provide: JwtService,
@@ -46,12 +48,17 @@ describe('AuthService', () => {
             },
           },
         },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn() },
+        },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prisma = module.get<PrismaService>(PrismaService);
     jwt = module.get<JwtService>(JwtService);
+    config = module.get<ConfigService>(ConfigService);
   });
 
   describe('validateUser', () => {

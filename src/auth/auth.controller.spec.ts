@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UsersService } from '@src/users/users.service';
 import { PrismaService } from '@src/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -30,6 +31,10 @@ describe('AuthController', () => {
         },
         {
           provide: JwtRefreshGuard,
+          useValue: {},
+        },
+        {
+          provide: ConfigService,
           useValue: {},
         },
       ],
