@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { SignInDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -67,7 +68,7 @@ export class AuthService {
     return tokens;
   }
 
-  async validateUser(dto: any) {
+  async validateUser(dto: SignInDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });

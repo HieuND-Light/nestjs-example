@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { RedisModule } from './redis/redis.module';
 import { LoggerModule } from 'nestjs-pino';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -19,8 +20,19 @@ import { LoggerModule } from 'nestjs-pino';
     }),
     ThrottlerModule.forRoot([
       {
+        name: 'short',
+        ttl: 1000,
+        limit: 3,
+      },
+      {
+        name: 'medium',
+        ttl: 10000,
+        limit: 20,
+      },
+      {
+        name: 'long',
         ttl: 60000,
-        limit: 10,
+        limit: 100,
       },
     ]),
     LoggerModule.forRoot({
@@ -48,6 +60,16 @@ import { LoggerModule } from 'nestjs-pino';
     }),
     PrismaModule,
     RedisModule,
+    BullModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+      },
+    }),
+    // Register specific queues
+    BullModule.registerQueue({
+      name: 'audio',
+    }),
     CatsModule,
     AuthModule,
     UsersModule,

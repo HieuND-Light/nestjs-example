@@ -6,7 +6,7 @@ import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import { doubleCsrfProtection } from './config/csrf.config';
+import { csrfSynchronisedProtection } from './config/csrf.config';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
@@ -26,9 +26,8 @@ async function bootstrap() {
     }),
   );
   app.use(helmet());
-  const allowedOrigins = config
-    .get<string | undefined>('ALLOWED_ORIGINS')
-    ?.split(',') || ['null'];
+  const allowedOrigins =
+    config.get<string | undefined>('ALLOWED_ORIGINS')?.split(',') || [];
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
@@ -37,8 +36,9 @@ async function bootstrap() {
         callback(new Error('Not allowed by CORS'));
       }
     },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
   app.use(
     session({
@@ -53,7 +53,7 @@ async function bootstrap() {
     }),
   );
   app.use(cookieParser(config.get('JWT_SECRET_KEY')));
-  app.use(doubleCsrfProtection);
+  app.use(csrfSynchronisedProtection);
   app.enableShutdownHooks();
   await app.listen(config.get<number>('PORT') ?? 3000);
 }

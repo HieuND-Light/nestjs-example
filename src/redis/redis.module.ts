@@ -15,7 +15,8 @@ import { Logger } from 'nestjs-pino';
           port: configService.get<number>('REDIS_PORT') ?? 6379,
           db: 0,
           lazyConnect: true, //
-          maxRetriesPerRequest: null,
+          maxRetriesPerRequest: 0,
+          enableOfflineQueue: false,
           retryStrategy(times) {
             const delay = 5000;
             logger.warn({

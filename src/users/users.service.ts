@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import Redis from 'ioredis';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Prisma } from '@src/generated/prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -18,6 +19,14 @@ export class UsersService {
     private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
   ) {}
+
+  async findAll() {
+    const allUser = await this.prisma.user.findMany();
+    if (!allUser) {
+      throw new NotFoundException(`No users available`);
+    }
+    return allUser.map((user) => plainToInstance(UserEntity, user));
+  }
 
   async create(createUserDto: CreateUserDto): Promise<UserEntity> {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -29,8 +38,11 @@ export class UsersService {
         },
       });
       return new UserEntity(user);
-    } catch (error: any) {
-      if (error.code === 'P2002') {
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         throw new ConflictException('Email already exists');
       }
       throw error;
@@ -39,23 +51,28 @@ export class UsersService {
 
   async findOne(id: string): Promise<UserEntity> {
     const cacheKey = `user:${id}`;
-    const cachedUser = await this.redis.get(cacheKey);
-    if (cachedUser) {
-      const oneUser = JSON.parse(cachedUser);
-      return plainToInstance(UserEntity, oneUser);
-    }
+    try {
+      const cachedUser = await this.redis.get(cacheKey);
+      if (cachedUser) {
+        const parsedUser = JSON.parse(cachedUser) as UserEntity;
+        return plainToInstance(UserEntity, parsedUser);
+      }
+    } catch (error) {}
 
     const userRecord = await this.prisma.user.findUnique({ where: { id } });
     if (!userRecord) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    await this.redis.set(cacheKey, JSON.stringify(userRecord), 'EX', 3600);
+
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(userRecord), 'EX', 3600);
+    } catch (error) {}
 
     return plainToInstance(UserEntity, userRecord);
   }
 
   async update(id: string, data: UpdateUserDto): Promise<UserEntity> {
-    let updatedUser: Partial<UserEntity>;
+    let updatedUser: UpdateUserDto;
     try {
       updatedUser = await this.prisma.user.update({
         where: { id },
@@ -65,7 +82,9 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} could not be updated`);
     }
 
-    await this.redis.del(`user:${id}`);
+    try {
+      await this.redis.del(`user:${id}`);
+    } catch (error) {}
 
     return plainToInstance(UserEntity, updatedUser);
   }

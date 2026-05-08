@@ -5,6 +5,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserEntity } from './entities/user.entity';
 import { getRedisConnectionToken } from '@nestjs-modules/ioredis';
+import { Prisma } from '@src/generated/prisma/client';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
@@ -84,9 +85,15 @@ describe('UsersService', () => {
 
     // 2. Conflict Path (Prisma Error P2002)
     it('should throw ConflictException if the email already exists', async () => {
-      jest.spyOn(prisma.user, 'create').mockRejectedValue({
-        code: 'P2002', // Prisma unique constraint violation
-      });
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+        },
+      );
+
+      jest.spyOn(prisma.user, 'create').mockRejectedValue(prismaError);
 
       await expect(service.create(mockUserDto)).rejects.toThrow(
         ConflictException,
